@@ -15,7 +15,6 @@ from docling.backend.msword_backend import MsWordDocumentBackend
 from docling.chunking import HybridChunker
 import re
 from openai import OpenAI
-from markitdown import MarkItDown
 import os
 
 api_key = os.getenv("OPENAI_API_KEY")
