@@ -7,6 +7,8 @@ st.caption("🚀 A Streamlit DocQA Chatbot powered by Smolagent + OpenAI")
 
 uploaded_file = st.file_uploader("Upload your document", type=["pdf", "txt", "docx"])
 
+docQAAgent = DocQAAgent()
+
 if uploaded_file is not None:
     file_extension = uploaded_file.name.split(".")[-1]
         
@@ -28,7 +30,7 @@ if uploaded_file is not None:
         sectionExtractor = SectionExtractor(temp_path)
         sections = sectionExtractor.process()
         print(sections)
-        docQAAgent = DocQAAgent(sections)
+        docQAAgent.setSections(sections)
         
     st.success("Document Ingestion complete!")
 
