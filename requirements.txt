@@ -2,3 +2,5 @@ smolagents
 smolagents[litellm]
 docling
 openai
+pypandoc
+streamlit_tags

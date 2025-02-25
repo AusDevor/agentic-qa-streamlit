@@ -21,7 +21,7 @@ class TableOfContentRetriever(Tool):
         section = self.sections[i]
         result += f"==========Section {str(i)}===========\n"
         result += f"Section Title:{section['title']}, start_index:{section['start_index']}, length:{section['length']}\n"
-        result += f"Section Summary:{section['summary']}\n"
+        #result += f"Section Summary:{section['summary']}\n"
 
       return result
 
@@ -60,6 +60,7 @@ class DocQAAgent:
     def setSections(self, sections):
         self.toc_retriever = TableOfContentRetriever(sections)
         self.section_retriever = SectionTextRetriever(sections)
+        self.sections = sections
         
         self.agent = CodeAgent(
             tools=[self.toc_retriever, self.section_retriever],
