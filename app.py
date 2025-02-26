@@ -103,7 +103,6 @@ fileList1 = []
 if 'agent_files' in st.session_state:
     fileList1 = st.session_state['agent_files']
     
-print(fileList1)
 with colAgent:
     keywords = st_tags(
         label='Target Documents:',
@@ -113,12 +112,10 @@ with colAgent:
         key="tag_agent_files_" + str(len(fileList1))
     )
    
-    
-fileList2 = []    
+fileList2 = [] 
 if 'legacy_files' in st.session_state:
     fileList2 = st.session_state['legacy_files']
 
-print(fileList2)
 
 with colLegacy:
     keywords = st_tags(
