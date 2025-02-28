@@ -20,7 +20,8 @@ class TableOfContentRetriever(Tool):
       for i in range(len(self.sections)):
         section = self.sections[i]
         result += f"==========Section {str(i)}===========\n"
-        result += f"Section Title:{section['title']}, start_index:{section['start_index']}, length:{section['length']}\n"
+        result += f"Section Title:{section['title']}, start_index:{section['start_index']}, length:{section['length']}, summary:{section['summary']}\n"
+        # print ('*********************', section['summary'])
         #result += f"Section Summary:{section['summary']}\n"
 
       return result

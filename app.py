@@ -57,6 +57,8 @@ def uploadDocument(mode="agent"):
             if mode == "agent":
                 sectionExtractor = SectionExtractor(file_path)
                 sections = sectionExtractor.process()
+                
+                print (sections)
                 docQAAgent = DocQAAgent()
                 docQAAgent.setSections(sections)
                 

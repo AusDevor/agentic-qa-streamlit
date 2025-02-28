@@ -61,7 +61,7 @@ class SectionExtractor:
         prompt = f"Summarize the following text and extract keywords:\n\n{section_content}"
 
         completion = client.chat.completions.create(
-        model="gpt-4",
+        model="o3-mini",
         messages=[
             {
                 "role": "user",
@@ -86,11 +86,13 @@ class SectionExtractor:
             if len(line.strip()) < 30 and line.strip():  # Section title condition
                 if current_title:  # Save the previous section
                     last_start_index = sections[len(sections)-1]['start_index'] if len(sections) > 0 else 0
+                    summary = self.generate_summary("\n".join(current_content).strip())
                     sections.append({
                         "title": current_title,
                         "start_index": current_start_index,
                         "length": current_start_index - last_start_index,  # Calculate length
-                        "text": "\n".join(current_content).strip()
+                        "text": "\n".join(current_content).strip(),
+                        "summary": summary
                     })
                 current_title = line.strip()
                 current_content = []
@@ -101,11 +103,13 @@ class SectionExtractor:
 
         if current_title:
             last_start_index = sections[len(sections)-1]['start_index'] if len(sections) > 0 else 0
+            summary = self.generate_summary("\n".join(current_content).strip())
             sections.append({
                 "title": current_title,
                 "start_index": current_start_index,
                 "length": current_start_index - last_start_index, 
-                "text": "\n".join(current_content).strip()
+                "text": "\n".join(current_content).strip(),
+                "summary": summary
             })
 
         return sections
@@ -125,8 +129,8 @@ class SectionExtractor:
             if current_section:
                 current_section['length'] = heading_start - current_section['start_index']
                 current_section['text'] = markdown_text[current_section['start_index']:heading_start].strip()
-                #current_section['summary'] = self.generate_summary(current_section['text'])
-                #current_section['context'] = current_section['text'][:200]
+                current_section['summary'] = self.generate_summary(current_section['text'])
+                # current_section['context'] = current_section['text'][:200]
                 sections.append(current_section)
 
             # Start a new section
@@ -134,14 +138,15 @@ class SectionExtractor:
                 'title': heading_text,
                 'start_index': heading_start,
                 'length': None,
-                'text': None
+                'text': None,
+                'summary': None
             }
 
         # Add the last section
         if current_section:
             current_section['length'] = len(markdown_text) - current_section['start_index']
             current_section['text'] = markdown_text[current_section['start_index']:].strip()
-            #current_section['summary'] = self.generate_summary(current_section['text'])
+            current_section['summary'] = self.generate_summary(current_section['text'])
             #current_section['context'] = current_section['text'][:200]
             sections.append(current_section)
 
