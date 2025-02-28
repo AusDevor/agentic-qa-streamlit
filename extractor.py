@@ -24,7 +24,7 @@ client = OpenAI(api_key=api_key)
 
 # Accelerator and pipeline options
 accelerator_options = AcceleratorOptions(
-    num_threads=16, device=AcceleratorDevice.CPU
+    num_threads=8, device=AcceleratorDevice.CUDA
 )
 pipeline_options = PdfPipelineOptions(do_table_structure=False, do_ocr=False)
 pipeline_options.table_structure_options.do_cell_matching = False
