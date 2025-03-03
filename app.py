@@ -5,8 +5,7 @@ from agent import DocQAAgent
 from extract_doc import *
 from chatbot import *
 import time
-import random
-import string
+import asyncio
 
 st.set_page_config(layout="wide")  # Enables full-width layout
 
@@ -56,7 +55,7 @@ def uploadDocument(mode="agent"):
             
             if mode == "agent":
                 sectionExtractor = SectionExtractor(file_path)
-                sections = sectionExtractor.process()
+                sections = asyncio.run(sectionExtractor.process())
                 
                 print (sections)
                 docQAAgent = DocQAAgent()
