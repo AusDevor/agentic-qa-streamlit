@@ -121,44 +121,49 @@ class SectionExtractor:
         return sections
 
     async def extract_sections_async(self, markdown_text):
-        
+
         heading_pattern = re.compile(r'^(#{1,6})\s(.+)', re.MULTILINE)
 
         sections = []
         current_section = None
         tasks = []
+        current_index = 0
+        current_title = ''
 
         for match in heading_pattern.finditer(markdown_text):
             heading_text = match.group(2)
             heading_start = match.start()
+            heading_end = match.end()
 
-            # If there's a current section, close it
-            if current_section:
-                current_section['length'] = heading_start - current_section['start_index']
-                current_section['text'] = markdown_text[current_section['start_index']:heading_start].strip()
-                tasks.append(self.generate_summary(current_section['text']))
-                sections.append(current_section)
-
-            # Start a new section
-            current_section = {
-                'title': heading_text,
-                'start_index': heading_start,
-                'length': None,
-                'text': None,
-                'summary': None
-            }
-
+            text = markdown_text[current_index:heading_start].strip()
+            if text or current_title:
+                sections.append({
+                    'title': current_title,
+                    'start_index': current_index,
+                    'length': heading_start - current_index,
+                    'text': text,
+                    'summary': None
+                })
+                tasks.append(self.generate_summary(text))
+            
+            current_index = heading_end
+            current_title = heading_text
         # Add the last section
-        if current_section:
-            current_section['length'] = len(markdown_text) - current_section['start_index']
-            current_section['text'] = markdown_text[current_section['start_index']:].strip()
-            tasks.append(self.generate_summary(current_section['text']))
-            sections.append(current_section)
+        text = markdown_text[current_index:].strip()
+        if text or current_title:
+            sections.append({
+                'title': current_title,
+                'start_index': current_index,
+                'length': len(markdown_text) - current_index,
+                'text': text,
+                'summary': None
+            })
+            tasks.append(self.generate_summary(text))
 
         summaries = await asyncio.gather (* tasks)
         for section, summary in zip (sections, summaries):
             section ['summary'] = summary
-            
+
         return sections
     
     async def process(self):

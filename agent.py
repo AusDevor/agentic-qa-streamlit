@@ -68,6 +68,7 @@ class DocQAAgent:
             model=model,
             max_steps=5,
             verbosity_level=2,
+            additional_authorized_imports=['matplotlib', 'numpy'],
         )
     
     def run(self, query):
