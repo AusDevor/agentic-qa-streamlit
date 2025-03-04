@@ -4,3 +4,4 @@ docling
 openai
 pypandoc
 streamlit_tags
+streamlit-authenticator

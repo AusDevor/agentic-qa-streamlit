@@ -6,9 +6,36 @@ from extract_doc import *
 from chatbot import *
 import time
 import asyncio
+import streamlit_authenticator as stauth
 
 st.set_page_config(layout="wide")  # Enables full-width layout
 
+config = {
+    'credentials': {
+        'usernames': {
+            'qa': {'email': 'qa@johnsnowlabs.com', 'name': 'QA', 'password': 'jsl@PA'},
+        },
+    },
+    'cookie': {'expiry_days': 30, 'key': 'some_secret_key', 'name': 'streamlit_auth'}
+}
+
+authenticator = stauth.Authenticate (
+    config ['credentials'],
+    config ['cookie']['name'],
+    config ['cookie']['key'],
+    config ['cookie']['expiry_days'],
+)
+
+authenticator.login(location='main')
+
+authentication_status = st.session_state.get('authentication_status')
+
+if authentication_status is False:
+    st.error('Username/password is incorrect')
+    st.stop()
+elif authentication_status is None:
+    st.warning('Please enter your crendentials')
+    st.stop()
 
 colAgent, colLegacy = st.columns(2)
 
