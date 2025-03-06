@@ -8,6 +8,101 @@ import time
 import asyncio
 import streamlit_authenticator as stauth
 
+colAgent, colLegacy = None, None
+
+def get_file_list ():
+    if 'file_list' not in st.session_state:
+        st.session_state['file_list'] = []
+    return st.session_state['file_list']
+    
+def get_agent ():
+    if 'agent' not in st.session_state:
+        st.session_state['agent'] = DocQAAgent()
+    return st.session_state['agent']
+
+def get_agent_messages ():
+    if 'agent_messages' not in st.session_state:
+        st.session_state['agent_messages'] = [{"role": "assistant", "content": "How can I help you?"}]
+    return st.session_state['agent_messages']
+
+def get_legacy_messages ():
+    if 'legacy_messages' not in st.session_state:
+        st.session_state['legacy_messages'] = [{"role": "assistant", "content": "How can I help you?"}]
+    return st.session_state['legacy_messages']
+
+def get_agent ():
+    if 'agent' not in st.session_state:
+        st.session_state['agent'] = DocQAAgent([])
+    return st.session_state['agent']
+    
+def set_agent (agent):
+    st.session_state['agent'] = agent
+    
+
+@st.dialog("Upload Documents")
+def uploadDocument():
+    uploaded_file = st.file_uploader("Click to import, or drag and drop here PDF or TXT or DOC/DOCX", type=["pdf", "txt", "doc", "md", "docx"])
+
+    if uploaded_file is not None:
+        file_path = uploaded_file.name
+        file_extension = uploaded_file.name.split(".")[-1]
+            
+        # Save the uploaded file temporarily
+        temp_path = f"temp/{file_path}"
+        buf = uploaded_file.getbuffer()
+        if file_extension == 'pdf' or file_extension == 'docx' or file_extension == "md" or file_extension == "txt":
+            with open(temp_path, 'wb') as file:
+                file.write(buf)
+        
+        elif file_extension == 'doc':
+            text = extract_doc(bytes(buf))
+            with open(temp_path, 'w') as file:
+                file.write(text)
+        
+        else:
+            st.error("Unsupported file format")
+            st.stop()
+            
+
+        st.write("Ingesting Document...")
+        
+
+        # Extract Sections from file content for ingestion
+        with st.spinner("Processing documents... please wait (Agentic)"):
+            sectionExtractor = SectionExtractor(file_path)
+            sections = asyncio.run(sectionExtractor.process())
+            
+            print (sections)
+            set_agent (DocQAAgent(get_agent().sections + sections))
+            print("Section Count", len(get_agent().sections))
+            
+        success_bar = st.empty()
+        st.success("Document Ingestion complete! (Agentic)")
+        time.sleep(0.1)
+        success_bar.empty()
+                
+        with st.spinner("Processing documents... please wait (Legacy)"):
+            files=[
+                ('files',(file_path,open(temp_path,'rb')))
+            ]
+            addFile(files)
+                            
+        # Display Success Status    
+        success_bar = st.empty()
+        st.success("Document Ingestion complete! (Legacy)")
+        time.sleep(0.1)
+        success_bar.empty()
+        
+        get_file_list().append(file_path)
+        
+        st.rerun()
+        
+    
+    
+##################################################################################################################
+#############################################       UI(AUTH)       ###############################################
+##################################################################################################################
+
 st.set_page_config(layout="wide")  # Enables full-width layout
 
 config = {
@@ -36,136 +131,37 @@ if authentication_status is False:
 elif authentication_status is None:
     st.warning('Please enter your crendentials')
     st.stop()
+    
+##################################################################################################################
+#############################################       UI(MAIN)       ###############################################
+
+colAgentTitle, colLegacyTitle = st.columns(2)
+
+if st.button("Add File for DocQA", use_container_width=True):
+    uploadDocument()
+        
+keywords = st_tags(
+    label='Target Documents:',
+    text='',
+    value=get_file_list(),
+    maxtags=100,
+    key="tag_files_" + str(len(get_file_list()))
+)
 
 colAgent, colLegacy = st.columns(2)
 
+colAgentTitle.title("💬 Agentic DocQA")
+colAgentTitle.caption("Agentic Chatbot powered by Smolagent + OpenAI")
 
-colAgent.title("💬 Agentic DocQA")
-colAgent.caption("Agentic Chatbot powered by Smolagent + OpenAI")
+colLegacyTitle.title("💬 Legacy DocQA")
+colLegacyTitle.caption("Legacy Chatbot powered by Semantic Search")
 
-colLegacy.title("💬 Legacy DocQA")
-colLegacy.caption("Legacy Chatbot powered by Semantic Search")
-
-    
-        
-@st.dialog("Upload Documents")
-def uploadDocument(mode="agent"):
-        
-    uploaded_file = st.file_uploader("Click to import, or drag and drop here PDF or TXT or DOC/DOCX", type=["pdf", "txt", "doc", "md", "docx"])
-
-    if uploaded_file is not None:
-        file_path = uploaded_file.name
-        file_extension = uploaded_file.name.split(".")[-1]
-            
-        # Save the uploaded file temporarily
-        temp_path = f"temp/{file_path}"
-        buf = uploaded_file.getbuffer()
-        if file_extension == 'pdf' or file_extension == 'docx' or file_extension == "md" or file_extension == "txt":
-            with open(temp_path, 'wb') as file:
-                file.write(buf)
-        
-        elif file_extension == 'doc':
-            text = extract_doc(bytes(buf))
-            with open(temp_path, 'w') as file:
-                file.write(text)
-        
-        else:
-            st.error("Unsupported file format")
-            st.stop()
-            
-
-        st.write("Ingesting Document...")
-        
-
-        # Extract Sections from file content for ingestion
-        with st.spinner("Processing documents... please wait"):
-            
-            if mode == "agent":
-                sectionExtractor = SectionExtractor(file_path)
-                sections = asyncio.run(sectionExtractor.process())
-                
-                print (sections)
-                docQAAgent = DocQAAgent()
-                docQAAgent.setSections(sections)
-                
-                if "agent" not in st.session_state:
-                    st.session_state["agent"] = docQAAgent
-                    print(len(st.session_state["agent"].sections))
-                else:
-                    prev_sections = st.session_state["agent"].sections
-                    
-                    st.session_state["agent"].setSections(prev_sections + sections)
-                    print(len(st.session_state["agent"].sections))
-            
-            else:
-                files=[
-                    ('files',(file_path,open(temp_path,'rb')))
-                ]
-                addFile(files)
-                            
-        # Display Success Status    
-        success_bar = st.empty()
-        st.success("Document Ingestion complete!")
-        time.sleep(0.1)
-        success_bar.empty()
-        
-        files_field = f'{mode}_files'
-        
-        if files_field in st.session_state:
-            st.session_state[files_field].append(file_path)
-        else:
-            st.session_state[files_field] = [file_path]
-        
-        st.rerun()
-        
-        
-
-if colAgent.button("Add File for Agentic DocQA"):
-    uploadDocument(mode="agent")
-    
-if colLegacy.button("Add File for Legacy DocQA"):
-    uploadDocument(mode="legacy")
-    
-
-fileList1 = []    
-if 'agent_files' in st.session_state:
-    fileList1 = st.session_state['agent_files']
-    
-with colAgent:
-    keywords = st_tags(
-        label='Target Documents:',
-        text='',
-        value=fileList1,
-        maxtags=10,
-        key="tag_agent_files_" + str(len(fileList1))
-    )
-   
-fileList2 = [] 
-if 'legacy_files' in st.session_state:
-    fileList2 = st.session_state['legacy_files']
-
-
-with colLegacy:
-    keywords = st_tags(
-        label='Target Documents:',
-        text='',
-        value=fileList2,
-        maxtags=10,
-        key="tag_legacy_files_" + str(len(fileList2))
-    )
-
-
-
-if "messages" not in st.session_state:
-    st.session_state["agent_messages"] = [{"role": "assistant", "content": "How can I help you?"}]
-    st.session_state["legacy_messages"] = [{"role": "assistant", "content": "How can I help you?"}]
-    
-for msg in st.session_state["agent_messages"]:
+for msg in get_agent_messages():
     colAgent.chat_message(msg["role"]).write(msg["content"])
     
-for msg in st.session_state["legacy_messages"]:
+for msg in get_legacy_messages():
     colLegacy.chat_message(msg["role"]).write(msg["content"])
-
+    
 if prompt := st.chat_input():
 
     st.session_state["agent_messages"].append({"role": "user", "content": prompt})
@@ -173,7 +169,7 @@ if prompt := st.chat_input():
     colAgent.chat_message("user").write(prompt)
     colLegacy.chat_message("user").write(prompt)
     
-    docQAAgent = st.session_state["agent"]
+    docQAAgent = get_agent()
     
     with st.spinner("Generating response..."):
         msg_agent = docQAAgent.run(prompt)
@@ -183,5 +179,3 @@ if prompt := st.chat_input():
     st.session_state["legacy_messages"].append({"role": "assistant", "content": msg_legacy})
     colAgent.chat_message("assistant").write(msg_agent)
     colLegacy.chat_message("assistant").write(msg_legacy)
-    
-    

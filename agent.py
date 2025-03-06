@@ -55,8 +55,18 @@ model = LiteLLMModel(
 
 class DocQAAgent:
     
-    def __init__(self):
-        pass
+    def __init__(self, sections):
+        self.toc_retriever = TableOfContentRetriever(sections)
+        self.section_retriever = SectionTextRetriever(sections)
+        self.sections = sections
+        
+        self.agent = CodeAgent(
+            tools=[self.toc_retriever, self.section_retriever],
+            model=model,
+            max_steps=8,
+            verbosity_level=2,
+            additional_authorized_imports=['matplotlib', 'numpy'],
+        )
 
     def setSections(self, sections):
         self.toc_retriever = TableOfContentRetriever(sections)

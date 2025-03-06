@@ -2,6 +2,7 @@ import requests
 import json
 from openai import OpenAI
 import os
+import streamlit as st
 api_key = os.getenv("OPENAI_API_KEY")
 client = OpenAI(api_key=api_key)
 base_url = "https://llm-services.staging.chatbot.johnsnowlabs.dev/docqa/docqa"
@@ -18,10 +19,14 @@ def createDocQA():
     create_doc_payload = json.dumps({})
     response = requests.request("POST", base_url, headers=headers, data=create_doc_payload)
     return json.loads(response.text)
-id = createDocQA()["id"]
-print(f"New doc Session created: {id}")
+
+def get_chatbot_session_id():
+    if 'chatbot_session_id' not in st.session_state:
+        st.session_state['chatbot_session_id'] = createDocQA()["id"]
+    return st.session_state['chatbot_session_id']
+
 def addFile(files):
-    url = f"{base_url}/files/{id}"
+    url = f"{base_url}/files/{get_chatbot_session_id()}"
     payload={}
     response = requests.post(url, headers=headers2, data=payload, files=files)
     return response.text
@@ -39,7 +44,8 @@ def call_llm(query, context):
     summary = completion.choices[0].message.content.strip()
     return summary
 def get_splits(query):
-    url=f"{base_url}/query/{id}"
+    url=f"{base_url}/query/{get_chatbot_session_id()}"
+    print (url)
     payload = json.dumps({
         "query": query,
         "top_k": 30,
