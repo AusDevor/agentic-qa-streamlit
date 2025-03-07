@@ -26,7 +26,7 @@ api_key = os.getenv("OPENAI_API_KEY")
 accelerator_options = AcceleratorOptions(
     num_threads=8, device=AcceleratorDevice.CUDA
 )
-pipeline_options = PdfPipelineOptions(do_table_structure=False, do_ocr=False)
+pipeline_options = PdfPipelineOptions(do_table_structure=True, do_ocr=True)
 pipeline_options.table_structure_options.do_cell_matching = False
 pipeline_options.table_structure_options.mode = TableFormerMode.FAST
 pipeline_options.accelerator_options = accelerator_options
@@ -42,7 +42,7 @@ doc_converter = (
         ],  # whitelist formats, non-matching files are ignored.
         format_options={
             InputFormat.PDF: PdfFormatOption(
-                pipeline_cls=StandardPdfPipeline, backend=PyPdfiumDocumentBackend
+                pipeline_cls=StandardPdfPipeline, backend=PyPdfiumDocumentBackend, pipeline_options=pipeline_options
             ),
             InputFormat.DOCX: WordFormatOption(
                 pipeline_cls=SimplePipeline,  backend=MsWordDocumentBackend
